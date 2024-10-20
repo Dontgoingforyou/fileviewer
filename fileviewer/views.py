@@ -1,27 +1,22 @@
 import io
-import os
 import zipfile
 
 import requests
+from django.core.cache import cache
 from django.shortcuts import render, redirect
-from django.http import HttpResponse
-from dotenv import load_dotenv
+from django.http import HttpResponse, HttpRequest
+from config.settings import auth_link, YANDEX_DISK_API_URL, YANDEX_CLIENT_ID, YANDEX_CLIENT_SECRET, REDIRECT_URI
+from typing import Any, Dict, List, Optional
 
-load_dotenv()
 
-YANDEX_CLIENT_ID = os.getenv('YANDEX_CLIENT_ID')
-YANDEX_CLIENT_SECRET = os.getenv('YANDEX_CLIENT_SECRET')
-REDIRECT_URI = os.getenv('REDIRECT_URI')
-
-auth_link = f"https://oauth.yandex.ru/authorize?response_type=code&client_id={YANDEX_CLIENT_ID}&redirect_uri={REDIRECT_URI}"
-
-YANDEX_DISK_API_URL = 'https://cloud-api.yandex.net/v1/disk/public/resources'
-
-def index(request):
+def index(request: HttpRequest) -> HttpResponse:
+    """Отображает страницу авторизации со ссылкой для входа в Яндекс """
     return render(request, 'fileviewer/index.html', {'auth_link': auth_link})
 
 
-def files(request):
+def files(request: HttpRequest)-> HttpResponse:
+    """Отображает список файлов на Яндекс.Диске по публичной ссылке """
+
     if request.method == 'POST':
         public_key = request.POST.get('public_key')
         access_token = request.session.get('access_token')
@@ -30,6 +25,10 @@ def files(request):
             print("Токен доступа не найден в сеансе.")
             return HttpResponse('Ошибка: требуется авторизация.', status=401)
 
+        # Кэширование по публичному ключу
+        cached_files = cache.get(public_key)
+        if cached_files:
+            files = cached_files
         headers = {
             'Authorization': f'OAuth {access_token}',
         }
@@ -39,23 +38,27 @@ def files(request):
         if response.status_code == 200:
             files = response.json().get('_embedded').get('items')
 
-            # Фильтрация по типу файлов
-            file_type_filter = request.POST.get('file_type')
-            if file_type_filter:
-                files = [file for file in files if file_type_filter in file.get('mime_type', '')]
-
-            for file in files:
-                file['download_url'] = file.get('file')
-
-            return render(request, 'fileviewer/files.html', {'files': files})
         else:
             return HttpResponse(f'Ошибка при получении файлов: {response.text}', status=response.status_code)
+
+        # Кэширование файлов
+        cache.set(public_key, files)
+
+        # Фильтрация по типу файлов
+        file_type_filter = request.POST.get('file_type')
+        if file_type_filter:
+            files = [file for file in files if file_type_filter in file.get('mime_type', '')]
+
+        for file in files:
+            file['download_url'] = file.get('file')
+
+            return render(request, 'fileviewer/files.html', {'files': files})
 
     return HttpResponse('Метод не поддерживается.', status=405)
 
 
-def oauth_callback(request):
-    """Получение access_token из параметров URL"""
+def oauth_callback(request: HttpRequest) -> HttpResponse:
+    """Получение access_token из параметров URL после успешной авторизации """
     code = request.GET.get('code')
 
     if not code:
@@ -81,7 +84,9 @@ def oauth_callback(request):
         return HttpResponse(f'Ошибка при получении токена: {token_response.text}', status=token_response.status_code)
 
 
-def download_multuple_files(request):
+def download_multuple_files(request: HttpRequest) -> HttpResponse:
+    """Скачивает несколько файлов, выбранных пользователем, в виде ZIP-архива """
+
     if request.method == 'POST':
         selected_files = request.POST.getlist('selected_files')
         if not selected_files:

@@ -7,7 +7,6 @@
 <body>
     <h1>Авторизация через Яндекс</h1>
     <a href="{{ auth_link }}">Авторизоваться</a>
-
     <h1>Введите публичную ссылку на Яндекс.Диск</h1>
     <form method="post" action="/files/">
         {% csrf_token %}
@@ -20,7 +19,6 @@
             <option value="image">Изображения</option>
             <option value="document">Документы</option>
         </select>
-
         <button type="submit">Просмотреть файлы</button>
     </form>
 

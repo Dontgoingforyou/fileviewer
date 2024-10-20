@@ -1,10 +1,23 @@
+import os
+
 from pathlib import Path
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-@ff$c0zio7tq@zj40_3-61#2gp)ar1_5dkrc-vu=_xc0v)ewgr'
 
 DEBUG = True
+
+load_dotenv()
+
+YANDEX_CLIENT_ID = os.getenv('YANDEX_CLIENT_ID')
+YANDEX_CLIENT_SECRET = os.getenv('YANDEX_CLIENT_SECRET')
+REDIRECT_URI = os.getenv('REDIRECT_URI')
+
+auth_link = f"https://oauth.yandex.ru/authorize?response_type=code&client_id={YANDEX_CLIENT_ID}&redirect_uri={REDIRECT_URI}"
+
+YANDEX_DISK_API_URL = 'https://cloud-api.yandex.net/v1/disk/public/resources'
 
 ALLOWED_HOSTS = []
 
@@ -82,3 +95,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+    }
+}
