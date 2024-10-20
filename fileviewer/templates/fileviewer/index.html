@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ввод публичной ссылки</title>
+</head>
+<body>
+    <h1>Авторизация через Яндекс</h1>
+    <a href="{{ auth_link }}">Авторизоваться</a>
+
+    <h1>Введите публичную ссылку на Яндекс.Диск</h1>
+    <form action="{% url 'files' %}" method="post">
+        {% csrf_token %}
+        <input type="text" name="public_key" required>
+        <button type="submit">Просмотреть файлы</button>
+    </form>
+</body>
+</html>
