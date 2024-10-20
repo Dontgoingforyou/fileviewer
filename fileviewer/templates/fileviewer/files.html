@@ -6,16 +6,21 @@
 </head>
 <body>
     <h1>Список файлов</h1>
-    <ul>
-        {% for file in files %}
-            <li>
-                {{ file.name }}
-                <a href="{{ file.download_url }}" target="_blank">Скачать</a>
-            </li>
-        {% empty %}
-            <li>Нет доступных файлов.</li>
-        {% endfor %}
-    </ul>
+    <form method="POST" action="/download-multuple-files/">
+        {% csrf_token %}
+        <ul>
+            {% for file in files %}
+                <li>
+                    <input type="checkbox" name="selected_files" value="{{ file.download_url }}">
+                    {{ file.name }}
+                </li>
+            {% empty %}
+                <li>Нет доступных файлов.</li>
+            {% endfor %}
+        </ul>
+        <button type="submit">Скачать выбранные файлы</button>
+    </form>
+
     <a href="/">Назад</a>
 </body>
 </html>

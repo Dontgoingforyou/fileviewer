@@ -9,10 +9,20 @@
     <a href="{{ auth_link }}">Авторизоваться</a>
 
     <h1>Введите публичную ссылку на Яндекс.Диск</h1>
-    <form action="{% url 'files' %}" method="post">
+    <form method="post" action="/files/">
         {% csrf_token %}
+        <label for="public_key">Введите публичную ссылку:</label>
         <input type="text" name="public_key" required>
+
+        <label for="file_type">Тип файлов:</label>
+        <select name="file_type">
+            <option value="">Все</option>
+            <option value="image">Изображения</option>
+            <option value="document">Документы</option>
+        </select>
+
         <button type="submit">Просмотреть файлы</button>
     </form>
+
 </body>
 </html>

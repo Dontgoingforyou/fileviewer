@@ -1,7 +1,9 @@
+import io
 import os
+import zipfile
 
 import requests
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from dotenv import load_dotenv
 
@@ -25,6 +27,7 @@ def files(request):
         access_token = request.session.get('access_token')
 
         if not access_token:
+            print("Токен доступа не найден в сеансе.")
             return HttpResponse('Ошибка: требуется авторизация.', status=401)
 
         headers = {
@@ -36,6 +39,11 @@ def files(request):
         if response.status_code == 200:
             files = response.json().get('_embedded').get('items')
 
+            # Фильтрация по типу файлов
+            file_type_filter = request.POST.get('file_type')
+            if file_type_filter:
+                files = [file for file in files if file_type_filter in file.get('mime_type', '')]
+
             for file in files:
                 file['download_url'] = file.get('file')
 
@@ -44,7 +52,6 @@ def files(request):
             return HttpResponse(f'Ошибка при получении файлов: {response.text}', status=response.status_code)
 
     return HttpResponse('Метод не поддерживается.', status=405)
-
 
 
 def oauth_callback(request):
@@ -69,6 +76,31 @@ def oauth_callback(request):
         access_token = token_response.json().get('access_token')
         request.session['access_token'] = access_token
         print(f"Токен успешно получен и сохранен в сессии: {access_token}")
-        return HttpResponse('Токен успешно получен и сохранен в сессии')
+        return redirect('index')
     else:
         return HttpResponse(f'Ошибка при получении токена: {token_response.text}', status=token_response.status_code)
+
+
+def download_multuple_files(request):
+    if request.method == 'POST':
+        selected_files = request.POST.getlist('selected_files')
+        if not selected_files:
+            return HttpResponse('Ошибка: файлы не выбраны.', status=400)
+
+        # Создание ZIP архива
+        zip_buffer = io.BytesIO()
+        with zipfile.ZipFile(zip_buffer, 'w') as zip_file:
+            for file_url in selected_files:
+                file_response = requests.get(file_url)
+                if file_response.status_code == 200:
+                    file_name = file_url.split('/')[-1]
+                    zip_file.writestr(file_name, file_response.content)
+
+        zip_buffer.seek(0)
+
+        # Отправка ZIP-архива пользователю
+        response = HttpResponse(zip_buffer, content_type='application/zip')
+        response['Content-Disposition'] = 'attachment; filename="files.zip"'
+        return response
+    else:
+        return HttpResponse('Метод не поддерживается.', status=405)
