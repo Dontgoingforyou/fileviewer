@@ -20,8 +20,8 @@
 1. **Клонируйте репозиторий**:
 
    ```bash
-   git clone https://github.com/ваш_пользователь/ваш_репозиторий.git
-   cd ваш_репозиторий
+   git clone git@github.com:Dontgoingforyou/fileviewer.git
+   cd fileviewer
 
 2. **Создайте виртуальное окружение**:
    ```bash
@@ -39,4 +39,4 @@
    ```bash
    python manage.py runserver
 
-5. **Перейдите по адресу: http://localhost:8000**:
+5. **Перейдите по адресу: http://localhost:8000**
